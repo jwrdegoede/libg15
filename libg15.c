@@ -48,6 +48,7 @@ const libg15_devices_t g15_devices[] = {
     DEVICE("Logitech G15 v2",0x46d,0xc227,G15_LCD|G15_KEYS|G15_DEVICE_5BYTE_RETURN),
     DEVICE("Logitech Gamepanel",0x46d,0xc251,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED),
     DEVICE("Logitech G13",0x46d,0xc21c,G15_LCD|G15_KEYS|G15_DEVICE_G13),
+    DEVICE("Logitech G110",0x46d,0xc22b,G15_KEYS),
     DEVICE(NULL,0,0,0)
 };
 
@@ -853,6 +854,68 @@ static void processKeyEvent5Byte(unsigned int *pressed_keys, unsigned char *buff
     }
 }
 
+static void processKeyEvent4Byte(unsigned int *pressed_keys, unsigned char *buffer)
+{
+    int i;
+
+    *pressed_keys = 0;
+
+    g15_log(stderr,G15_LOG_WARN,"Keyboard: %x, %x, %x, %x\n",buffer[0],buffer[1],buffer[2],buffer[3]);
+
+    if (buffer[0] == 0x02)
+    {
+        if (buffer[1]&0x01)
+            *pressed_keys |= G15_KEY_G1;
+
+        if (buffer[1]&0x02)
+            *pressed_keys |= G15_KEY_G2;
+
+        if (buffer[1]&0x04)
+            *pressed_keys |= G15_KEY_G3;
+
+        if (buffer[1]&0x08)
+            *pressed_keys |= G15_KEY_G4;
+
+        if (buffer[1]&0x10)
+            *pressed_keys |= G15_KEY_G5;
+
+        if (buffer[1]&0x20)
+            *pressed_keys |= G15_KEY_G6;
+
+        if (buffer[1]&0x40)
+            *pressed_keys |= G15_KEY_G7;
+
+        if (buffer[1]&0x80)
+            *pressed_keys |= G15_KEY_G8;
+
+        if (buffer[2]&0x01)
+            *pressed_keys |= G15_KEY_G9;
+
+        if (buffer[2]&0x02)
+            *pressed_keys |= G15_KEY_G10;
+
+        if (buffer[2]&0x04)
+            *pressed_keys |= G15_KEY_G11;
+
+        if (buffer[2]&0x08)
+            *pressed_keys |= G15_KEY_G12;
+
+        if (buffer[2]&0x10)
+            *pressed_keys |= G15_KEY_M1;
+
+        if (buffer[2]&0x20)
+            *pressed_keys |= G15_KEY_M2;
+
+        if (buffer[2]&0x40)
+            *pressed_keys |= G15_KEY_M3;
+
+        if (buffer[2]&0x80)
+            *pressed_keys |= G15_KEY_MR;
+
+        if (buffer[3]&0x1)
+            *pressed_keys |= G15_KEY_LIGHT;
+    }
+}
 
 int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
 {
@@ -879,6 +942,9 @@ int getPressedKeys(unsigned int *pressed_keys, unsigned int timeout)
     }
 
     switch(ret) {
+      case 4:
+          processKeyEvent4Byte(pressed_keys, buffer);
+          return G15_NO_ERROR;
       case 5:
           processKeyEvent5Byte(pressed_keys, buffer);
           return G15_NO_ERROR;
