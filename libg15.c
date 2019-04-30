@@ -49,6 +49,8 @@ const libg15_devices_t g15_devices[] = {
     DEVICE("Logitech Gamepanel",0x46d,0xc251,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED),
     DEVICE("Logitech G13",0x46d,0xc21c,G15_LCD|G15_KEYS|G15_DEVICE_G13),
     DEVICE("Logitech G110",0x46d,0xc22b,G15_KEYS),
+    DEVICE("Logitech G510",0x46d,0xc22d,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510), /* without audio activated */
+    DEVICE("Logitech G510",0x46d,0xc22e,G15_LCD|G15_KEYS|G15_DEVICE_IS_SHARED|G15_DEVICE_G510), /* with audio activated */
     DEVICE(NULL,0,0,0)
 };
 
@@ -167,6 +169,11 @@ static usb_dev_handle * findAndOpenDevice(libg15_devices_t handled_device, int d
 
                     for (i=0;i<cfg->bNumInterfaces; i++){
                         struct usb_interface *ifp = &cfg->interface[i];
+
+                        if (g15DeviceCapabilities()&G15_DEVICE_G510){
+                            if (i==G510_STANDARD_KEYBOARD_INTERFACE) continue;
+                        }
+
                         /* if endpoints are already known, finish up */
                         if(g15_keys_endpoint && g15_lcd_endpoint)
                           break;
@@ -539,6 +546,9 @@ int setLEDs(unsigned int leds)
     unsigned char m_led_buf[4] = { 2, 4, 0, 0 };
     m_led_buf[2] = ~(unsigned char)leds;
   
+    if(g15DeviceCapabilities()&G15_DEVICE_G510)
+        setG510LEDColor(0, 255, 0);
+
     if(shared_device>0)
         return G15_ERROR_UNSUPPORTED;
 
@@ -595,6 +605,21 @@ int setKBBrightness(unsigned int level)
     }
     pthread_mutex_lock(&libusb_mutex);
     retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x302, 0, (char*)usb_data, 4, 10000); 
+    pthread_mutex_unlock(&libusb_mutex);
+    return retval;
+}
+
+int setG510LEDColor(unsigned char r, unsigned char g, unsigned char b)
+{
+    int retval = 0;
+    unsigned char usb_data[] = { 4, 0, 0, 0 };
+
+    usb_data[1] = r;
+    usb_data[2] = g;
+    usb_data[3] = b;
+
+    pthread_mutex_lock(&libusb_mutex);
+    retval = usb_control_msg(keyboard_device, USB_TYPE_CLASS + USB_RECIP_INTERFACE, 9, 0x305, 1, (char*)usb_data, 4, 10000);
     pthread_mutex_unlock(&libusb_mutex);
     return retval;
 }
@@ -850,6 +875,94 @@ static void processKeyEvent5Byte(unsigned int *pressed_keys, unsigned char *buff
             *pressed_keys |= G15_KEY_L5;
             
         if (buffer[2]&0x1)
+            *pressed_keys |= G15_KEY_LIGHT;
+    }
+
+    // G510
+    if (buffer[0] == 0x03)
+    {
+        if (buffer[1]&0x01)
+            *pressed_keys |= G15_KEY_G1;
+
+        if (buffer[1]&0x02)
+            *pressed_keys |= G15_KEY_G2;
+
+        if (buffer[1]&0x04)
+            *pressed_keys |= G15_KEY_G3;
+
+        if (buffer[1]&0x08)
+            *pressed_keys |= G15_KEY_G4;
+
+        if (buffer[1]&0x10)
+            *pressed_keys |= G15_KEY_G5;
+
+        if (buffer[1]&0x20)
+            *pressed_keys |= G15_KEY_G6;
+
+        if (buffer[1]&0x40)
+            *pressed_keys |= G15_KEY_G7;
+
+        if (buffer[1]&0x80)
+            *pressed_keys |= G15_KEY_G8;
+
+        if (buffer[2]&0x01)
+            *pressed_keys |= G15_KEY_G9;
+
+        if (buffer[2]&0x02)
+            *pressed_keys |= G15_KEY_G10;
+
+        if (buffer[2]&0x04)
+            *pressed_keys |= G15_KEY_G11;
+
+        if (buffer[2]&0x08)
+            *pressed_keys |= G15_KEY_G12;
+
+        if (buffer[2]&0x10)
+            *pressed_keys |= G15_KEY_G13;
+
+        if (buffer[2]&0x20)
+            *pressed_keys |= G15_KEY_G14;
+
+        if (buffer[2]&0x40)
+            *pressed_keys |= G15_KEY_G15;
+
+        if (buffer[2]&0x80)
+            *pressed_keys |= G15_KEY_G16;
+
+        if (buffer[3]&0x01)
+            *pressed_keys |= G15_KEY_G17;
+
+        if (buffer[3]&0x02)
+            *pressed_keys |= G15_KEY_G18;
+
+        if (buffer[3]&0x10)
+            *pressed_keys |= G15_KEY_M1;
+
+        if (buffer[3]&0x20)
+            *pressed_keys |= G15_KEY_M2;
+
+        if (buffer[3]&0x40)
+            *pressed_keys |= G15_KEY_M3;
+
+        if (buffer[3]&0x80)
+            *pressed_keys |= G15_KEY_MR;
+
+        if (buffer[4]&0x1)
+            *pressed_keys |= G15_KEY_L1;
+
+        if (buffer[4]&0x2)
+            *pressed_keys |= G15_KEY_L2;
+
+        if (buffer[4]&0x4)
+            *pressed_keys |= G15_KEY_L3;
+
+        if (buffer[4]&0x8)
+            *pressed_keys |= G15_KEY_L4;
+
+        if (buffer[4]&0x10)
+            *pressed_keys |= G15_KEY_L5;
+
+        if (buffer[3]&0x8)
             *pressed_keys |= G15_KEY_LIGHT;
     }
 }
