@@ -12,12 +12,9 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with g15lcd; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    along with libg15; if not, see <http://www.gnu.org/licenses/>.
     
     (c) 2006 - 2007 The G15tools Project - g15tools.sf.net
-    
-    $Revision: 292 $ -  $Date: 2008-11-11 08:51:25 -0500 (Tue, 11 Nov 2008) $ $Author: aneurysm9 $
 */
 
 #ifndef _LIBG15_H_
